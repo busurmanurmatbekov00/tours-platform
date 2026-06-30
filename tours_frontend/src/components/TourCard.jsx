@@ -1,0 +1,55 @@
+import { useT } from '../hooks/useT';
+
+export default function TourCard({ tour }) {
+  const { t, lang } = useT();
+
+  return (
+    <article className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
+      <div className="aspect-[16/10] overflow-hidden bg-gray-200">
+        <img
+          src={tour.cover_photo}
+          alt={tour.title[lang]}
+          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+          loading="lazy"
+        />
+      </div>
+
+      <div className="p-4">
+        <div className="flex items-center gap-2 mb-2 text-xs">
+          <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium">
+            {tour.tour_type.name[lang]}
+          </span>
+          <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full font-medium">
+            {tour.difficulty_level.name[lang]}
+          </span>
+          {tour.is_custom && (
+            <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full font-medium">
+              ★
+            </span>
+          )}
+        </div>
+
+        <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 min-h-[3rem]">
+          {tour.title[lang]}
+        </h3>
+        <p className="text-sm text-gray-600 line-clamp-2 mb-3 min-h-[2.5rem]">
+          {tour.summary[lang]}
+        </p>
+
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+          <div>
+            <div className="text-xs text-gray-500">
+              {tour.duration_days} {t.catalog.days}
+            </div>
+            <div className="text-lg font-bold text-gray-900">
+              ${tour.price}
+            </div>
+          </div>
+          <button className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+            {t.catalog.view}
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}   

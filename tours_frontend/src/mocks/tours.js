@@ -1,0 +1,181 @@
+// Mock-данные туров. Пока бэкенд не готов — данные берутся отсюда.
+// Структура совпадает с будущим API.
+
+export const tourTypes = [
+  { id: 1, code: 'trekking', name: { ru: 'Трекинг', en: 'Trekking' } },
+  { id: 2, code: 'cultural', name: { ru: 'Культурный', en: 'Cultural' } },
+  { id: 3, code: 'gastronomy', name: { ru: 'Гастрономический', en: 'Gastronomy' } },
+  { id: 4, code: 'horse_riding', name: { ru: 'Конные туры', en: 'Horse riding' } },
+  { id: 5, code: 'mountaineering', name: { ru: 'Альпинизм', en: 'Mountaineering' } },
+  { id: 6, code: 'rafting', name: { ru: 'Рафтинг', en: 'Rafting' } },
+];
+
+export const difficultyLevels = [
+  { id: 1, code: 'easy', name: { ru: 'Лёгкий', en: 'Easy' } },
+  { id: 2, code: 'moderate', name: { ru: 'Средний', en: 'Moderate' } },
+  { id: 3, code: 'challenging', name: { ru: 'Сложный', en: 'Challenging' } },
+  { id: 4, code: 'expert', name: { ru: 'Экспертный', en: 'Expert' } },
+];
+
+export const mockTours = [
+  {
+    id: 1,
+    slug: 'issyk-kul-trek-7d',
+    cover_photo: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800',
+    tour_type: tourTypes[0],
+    difficulty_level: difficultyLevels[1],
+    price: 450,
+    currency: 'USD',
+    duration_days: 7,
+    is_custom: false,
+    title: {
+      ru: 'Трекинг вокруг Иссык-Куля',
+      en: 'Issyk-Kul Trek',
+    },
+    summary: {
+      ru: 'Семидневный поход по живописным берегам и горам.',
+      en: 'Seven-day hike along scenic shores and mountains.',
+    },
+    provider: { id: 1, display_name: 'Иван Петров', is_verified: true },
+  },
+  {
+    id: 2,
+    slug: 'lenin-peak-expedition',
+    cover_photo: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800',
+    tour_type: tourTypes[4],
+    difficulty_level: difficultyLevels[3],
+    price: 2800,
+    currency: 'USD',
+    duration_days: 21,
+    is_custom: true,
+    title: {
+      ru: 'Экспедиция на пик Ленина (7134 м)',
+      en: 'Lenin Peak Expedition (7134 m)',
+    },
+    summary: {
+      ru: 'Восхождение на одну из высочайших вершин Кыргызстана.',
+      en: 'Climb one of Kyrgyzstan\'s highest peaks.',
+    },
+    provider: { id: 2, display_name: 'Mountain Guides KG', is_verified: true },
+  },
+  {
+    id: 3,
+    slug: 'bishkek-food-tour',
+    cover_photo: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
+    tour_type: tourTypes[2],
+    difficulty_level: difficultyLevels[0],
+    price: 65,
+    currency: 'USD',
+    duration_days: 1,
+    is_custom: false,
+    title: {
+      ru: 'Гастротур по Бишкеку',
+      en: 'Bishkek Food Tour',
+    },
+    summary: {
+      ru: 'Бешбармак, плов, манты и местные кафе за один день.',
+      en: 'Beshbarmak, plov, manty and local cafes in one day.',
+    },
+    provider: { id: 3, display_name: 'Taste of Kyrgyzstan', is_verified: true },
+  },
+  {
+    id: 4,
+    slug: 'song-kul-horse-tour',
+    cover_photo: 'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=800',
+    tour_type: tourTypes[3],
+    difficulty_level: difficultyLevels[1],
+    price: 580,
+    currency: 'USD',
+    duration_days: 5,
+    is_custom: false,
+    title: {
+      ru: 'Конный тур к озеру Сон-Куль',
+      en: 'Song-Kul Horse Tour',
+    },
+    summary: {
+      ru: 'Пять дней верхом через джайлоо и юрточные лагеря.',
+      en: 'Five days on horseback through jailoo and yurt camps.',
+    },
+    provider: { id: 4, display_name: 'Nomad Tours', is_verified: true },
+  },
+  {
+    id: 5,
+    slug: 'ala-archa-day-hike',
+    cover_photo: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=800',
+    tour_type: tourTypes[0],
+    difficulty_level: difficultyLevels[0],
+    price: 35,
+    currency: 'USD',
+    duration_days: 1,
+    is_custom: false,
+    title: {
+      ru: 'Однодневный поход в Ала-Арчу',
+      en: 'Ala-Archa Day Hike',
+    },
+    summary: {
+      ru: 'Лёгкий маршрут в национальном парке возле Бишкека.',
+      en: 'Easy route in the national park near Bishkek.',
+    },
+    provider: { id: 1, display_name: 'Иван Петров', is_verified: true },
+  },
+  {
+    id: 6,
+    slug: 'chuy-rafting',
+    cover_photo: 'https://images.unsplash.com/photo-1530866495561-507c9faab2ed?w=800',
+    tour_type: tourTypes[5],
+    difficulty_level: difficultyLevels[2],
+    price: 120,
+    currency: 'USD',
+    duration_days: 2,
+    is_custom: true,
+    title: {
+      ru: 'Рафтинг по реке Чу',
+      en: 'Chu River Rafting',
+    },
+    summary: {
+      ru: 'Двухдневный сплав с порогами 3–4 категории.',
+      en: 'Two-day rafting with class 3-4 rapids.',
+    },
+    provider: { id: 5, display_name: 'Whitewater KG', is_verified: true },
+  },
+  {
+    id: 7,
+    slug: 'osh-cultural-3d',
+    cover_photo: 'https://images.unsplash.com/photo-1528127269322-539801943592?w=800',
+    tour_type: tourTypes[1],
+    difficulty_level: difficultyLevels[0],
+    price: 220,
+    currency: 'USD',
+    duration_days: 3,
+    is_custom: false,
+    title: {
+      ru: 'Культурный тур по Ошу',
+      en: 'Osh Cultural Tour',
+    },
+    summary: {
+      ru: 'Сулайман-Тоо, базары и древняя история юга страны.',
+      en: 'Sulaiman-Too, bazaars and ancient history of the south.',
+    },
+    provider: { id: 6, display_name: 'Silk Road Heritage', is_verified: true },
+  },
+  {
+    id: 8,
+    slug: 'jeti-oguz-2d',
+    cover_photo: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
+    tour_type: tourTypes[0],
+    difficulty_level: difficultyLevels[1],
+    price: 180,
+    currency: 'USD',
+    duration_days: 2,
+    is_custom: false,
+    title: {
+      ru: 'Джети-Огуз и Каракол',
+      en: 'Jeti-Oguz & Karakol',
+    },
+    summary: {
+      ru: 'Красные скалы, водопады и треккинг в Тянь-Шане.',
+      en: 'Red rocks, waterfalls and Tien Shan trekking.',
+    },
+    provider: { id: 4, display_name: 'Nomad Tours', is_verified: true },
+  },
+];

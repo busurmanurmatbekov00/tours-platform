@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Django
+*.log
+db.sqlite3
+media/
+staticfiles/
+
+# Виртуальное окружение
+venv/
+env/
+.venv/
+
+# Секреты — важно!
+.env
+*.env
+
+# Временные файлы
+_models_raw.py
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# ОС
+.DS_Store
+Thumbs.db

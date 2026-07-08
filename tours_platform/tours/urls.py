@@ -7,6 +7,8 @@ from .views import (
     MyTourVisaView, MyTourInsuranceView,
     MyTourSubmitView,
 )
+
+
 from .catalog_views import (
     CatalogToursListView, CatalogTourDetailView,
     CatalogTourTypesView, CatalogDifficultyLevelsView,
@@ -17,7 +19,7 @@ from .public_providers_views import (
 )
 
 from .admin_moderation_views import (
-    AdminToursListView, AdminTourHideView, AdminTourUnhideView, AdminTourDeleteView,
+    AdminToursListView, AdminTourHideView, AdminTourUnhideView, AdminTourDeleteView, AdminTourApproveView,
 )
 
 app_name = 'tours'
@@ -57,4 +59,5 @@ urlpatterns = [
     path('providers/admin/tours/<int:tour_id>/hide/', AdminTourHideView.as_view(), name='admin-tour-hide'),
     path('providers/admin/tours/<int:tour_id>/unhide/', AdminTourUnhideView.as_view(), name='admin-tour-unhide'),
     path('providers/admin/tours/<int:tour_id>/delete/', AdminTourDeleteView.as_view(), name='admin-tour-delete'),
+    path('providers/admin/tours/<int:tour_id>/approve/', AdminTourApproveView.as_view(), name='admin-tour-approve'),
 ]

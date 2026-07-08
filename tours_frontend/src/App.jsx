@@ -2,11 +2,11 @@ import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import ProviderLayout from './components/ProviderLayout';
+import AdminLayout from './components/AdminLayout';
 import TourDetailPage from './pages/TourDetailPage';
 import ExecutorProfilePage from './pages/ExecutorProfilePage';
 import InfoPage from './pages/InfoPage';
 import TourFormPage from './pages/provider/TourFormPage';
-
 
 import HomePage from './pages/HomePage';
 import CatalogPage from './pages/CatalogPage';
@@ -17,6 +17,11 @@ import ProviderProfilePage from './pages/provider/ProviderProfilePage';
 import VerificationPage from './pages/provider/VerificationPage';
 import CertificatesPage from './pages/provider/CertificatesPage';
 import MyToursPage from './pages/provider/MyToursPage';
+
+import AdminOverviewPage from './pages/admin/AdminOverviewPage';
+import AdminVerificationPage from './pages/admin/AdminVerificationPage';
+import AdminToursPage from './pages/admin/AdminToursPage';
+import AdminProvidersPage from './pages/admin/AdminProvidersPage';
 
 const PROVIDER_ROLES = ['guide', 'tour_operator', 'travel_agent'];
 
@@ -32,6 +37,7 @@ function App() {
         <Route path="register" element={<RegisterPage />} />
         <Route path="/info" element={<InfoPage />} />
 
+        {/* Личный кабинет исполнителя */}
         <Route element={<ProtectedRoute roles={PROVIDER_ROLES} />}>
           <Route path="dashboard" element={<ProviderLayout />}>
             <Route index element={<OverviewPage />} />
@@ -42,7 +48,17 @@ function App() {
             <Route path="tours/new" element={<TourFormPage />} />
             <Route path="tours/:id/edit" element={<TourFormPage />} />
           </Route>
-      </Route>
+        </Route>
+
+        {/* Панель администратора — отдельная ветка, не внутри dashboard */}
+        <Route element={<ProtectedRoute roles={['admin']} />}>
+          <Route path="admin-panel" element={<AdminLayout />}>
+            <Route index element={<AdminOverviewPage />} />
+            <Route path="verification" element={<AdminVerificationPage />} />
+            <Route path="tours" element={<AdminToursPage />} />
+            <Route path="providers" element={<AdminProvidersPage />} />
+          </Route>
+        </Route>
       </Route>
     </Routes>
   );

@@ -5,6 +5,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+
+
 from users.permissions import IsPlatformAdmin
 from moderation.models import ModerationAction
 
@@ -13,7 +15,7 @@ from .models import (
 )
 from .serializers import (
     AdminVerificationRequestListSerializer,
-    AdminVerificationRequestDetailSerializer,
+    AdminVerificationRequestDetailSerializer, AdminProviderListSerializer
 )
 
 
@@ -208,3 +210,23 @@ class AdminUnblockProviderView(APIView):
         )
 
         return Response({'detail': 'Исполнитель разблокирован.'})
+    
+class AdminProvidersListView(APIView):
+    """GET список всех исполнителей для админа."""
+
+    def get(self, request):
+        qs = ProviderProfile.objects.select_related(
+            'user__role', 'verification_status'
+        ).order_by('display_name')
+
+        role = request.query_params.get('role')
+        if role:
+            qs = qs.filter(user__role__code=role)
+
+        is_blocked = request.query_params.get('is_blocked')
+        if is_blocked in ('true', '1'):
+            qs = qs.filter(user__is_blocked=True)
+        elif is_blocked in ('false', '0'):
+            qs = qs.filter(user__is_blocked=False)
+
+        return Response(AdminProviderListSerializer(qs, many=True).data)

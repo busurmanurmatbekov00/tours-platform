@@ -54,6 +54,18 @@ class VerificationDocumentSerializer(serializers.ModelSerializer):
             'original_filename', 'mime_type', 'file_size', 'uploaded_at',
         )
 
+class AdminProviderListSerializer(serializers.ModelSerializer):
+    role_code = serializers.CharField(source='user.role.code', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
+    is_blocked = serializers.BooleanField(source='user.is_blocked', read_only=True)
+    verification_status_code = serializers.CharField(source='verification_status.code', read_only=True)
+
+    class Meta:
+        model = ProviderProfile
+        fields = (
+            'id', 'slug', 'display_name', 'role_code', 'email',
+            'is_blocked', 'verification_status_code', 'is_published', 'created_at',
+        )
 
 class VerificationRequestSerializer(serializers.ModelSerializer):
     status_code = serializers.CharField(source='status.code', read_only=True)

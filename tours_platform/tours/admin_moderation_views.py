@@ -11,7 +11,28 @@ from moderation.models import ModerationAction
 from .models import Tour
 
 
-# ---------- Локальный сериализатор для списка ----------
+from django.utils import timezone
+
+
+
+
+from .serializers import TourDetailSerializer
+
+
+class AdminTourApproveView(APIView):
+    """POST одобрить тур — перевести из pending_review в published."""
+
+    def post(self, request, tour_id):
+        tour = get_object_or_404(Tour, id=tour_id)
+        if tour.status != 'pending_review':
+            return Response(
+                {'detail': f'Тур в статусе "{tour.status}", нельзя одобрить.'},
+                status=400,
+            )
+        tour.status = 'published'
+        tour.published_at = timezone.now()
+        tour.save(update_fields=['status', 'published_at'])
+        return Response(TourDetailSerializer(tour).data)
 
 class AdminTourListSerializer(serializers.ModelSerializer):
     """Краткий вид тура для админ-модерации."""

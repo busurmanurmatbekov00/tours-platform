@@ -15,6 +15,7 @@ from .admin_views import (
     AdminVerificationRejectView,
     AdminBlockProviderView,
     AdminUnblockProviderView,
+    AdminProvidersListView, 
 )
 
 app_name = 'providers'
@@ -42,4 +43,5 @@ urlpatterns = [
          AdminBlockProviderView.as_view(), name='admin-provider-block'),
     path('admin/providers/<int:profile_id>/unblock/',
          AdminUnblockProviderView.as_view(), name='admin-provider-unblock'),
+     path('admin/providers/', AdminProvidersListView.as_view(), name='admin-providers-list'),
 ]

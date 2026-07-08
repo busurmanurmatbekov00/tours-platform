@@ -50,7 +50,6 @@ class MyVerificationRequestsView(APIView):
     def post(self, request):
         profile = _get_my_profile(request)
 
-        # запретить повторную подачу, если уже есть pending
         pending = profile.verification_requests.filter(status__code='pending').exists()
         if pending:
             return Response(
@@ -214,3 +213,5 @@ class CertificateTypesListView(APIView):
             {'id': ct.id, 'code': ct.code, 'name_ru': ct.name_ru, 'name_en': ct.name_en}
             for ct in qs
         ])
+
+ 

@@ -2,6 +2,11 @@ import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import ProviderLayout from './components/ProviderLayout';
+import TourDetailPage from './pages/TourDetailPage';
+import ExecutorProfilePage from './pages/ExecutorProfilePage';
+import InfoPage from './pages/InfoPage';
+import TourFormPage from './pages/provider/TourFormPage';
+
 
 import HomePage from './pages/HomePage';
 import CatalogPage from './pages/CatalogPage';
@@ -21,8 +26,11 @@ function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="catalog" element={<CatalogPage />} />
+        <Route path="/tours/:slug" element={<TourDetailPage />} />
+        <Route path="/executors/:slug" element={<ExecutorProfilePage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
+        <Route path="/info" element={<InfoPage />} />
 
         <Route element={<ProtectedRoute roles={PROVIDER_ROLES} />}>
           <Route path="dashboard" element={<ProviderLayout />}>
@@ -31,8 +39,10 @@ function App() {
             <Route path="verification" element={<VerificationPage />} />
             <Route path="certificates" element={<CertificatesPage />} />
             <Route path="tours" element={<MyToursPage />} />
+            <Route path="tours/new" element={<TourFormPage />} />
+            <Route path="tours/:id/edit" element={<TourFormPage />} />
           </Route>
-        </Route>
+      </Route>
       </Route>
     </Routes>
   );

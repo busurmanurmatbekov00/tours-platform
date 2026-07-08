@@ -26,7 +26,7 @@ from .serializers import (
     TourTypePublicSerializer, DifficultyLevelPublicSerializer,
     LocationPublicSerializer,
 )
-
+from .translation_utils import auto_translate
 
 # ---------- Публичные справочники ----------
 
@@ -127,17 +127,29 @@ class MyToursListCreateView(APIView):
             description=data.get('description_ru') or None,
             route_overview=data.get('route_overview_ru') or None,
         )
+
+        lang_en = Language.objects.get(code='en')
         if data.get('title_en'):
-            lang_en = Language.objects.get(code='en')
             TourTranslation.objects.create(
                 tour=tour, language=lang_en,
                 title=data['title_en'],
                 summary=data.get('summary_en') or None,
                 description=data.get('description_en') or None,
                 route_overview=data.get('route_overview_en') or None,
+                is_auto_translated=False,
+            )
+        else:
+            # автоперевод, если English не прислан
+            TourTranslation.objects.create(
+                tour=tour, language=lang_en,
+                title=auto_translate(data['title_ru'], 'ru', 'en'),
+                summary=auto_translate(data.get('summary_ru', ''), 'ru', 'en') if data.get('summary_ru') else None,
+                description=auto_translate(data.get('description_ru', ''), 'ru', 'en') if data.get('description_ru') else None,
+                route_overview=auto_translate(data.get('route_overview_ru', ''), 'ru', 'en') if data.get('route_overview_ru') else None,
+                is_auto_translated=True,
             )
 
-        return Response(TourDetailSerializer(tour).data, status=status.HTTP_201_CREATED)
+            return Response(TourDetailSerializer(tour).data, status=status.HTTP_201_CREATED)
 
 
 class MyTourDetailView(APIView):

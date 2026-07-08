@@ -1,18 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Award, Plus, Trash2, X } from 'lucide-react';
 import { useT } from '../../hooks/useT';
 import PageHeader from '../../components/PageHeader';
+import {
+  getMyCertificates, createCertificate, deleteCertificate, getCertificateTypes,
+} from '../../api/provider';
 
 export default function CertificatesPage() {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [certs, setCerts] = useState([]);
+  const [certTypes, setCertTypes] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
 
-  const add = (cert) => {
-    setCerts([...certs, { ...cert, id: Date.now() }]);
-    setShowForm(false);
+  const loadCerts = () => {
+    getMyCertificates()
+      .then(setCerts)
+      .catch(() => setCerts([]))
+      .finally(() => setLoading(false));
   };
-  const remove = (id) => setCerts(certs.filter((c) => c.id !== id));
+
+  useEffect(() => {
+    loadCerts();
+    getCertificateTypes().then(setCertTypes).catch(() => setCertTypes([]));
+  }, []);
+
+  const add = async (cert, file) => {
+    await createCertificate(cert, file);
+    setShowForm(false);
+    loadCerts();
+  };
+
+  const remove = async (id) => {
+    await deleteCertificate(id);
+    loadCerts();
+  };
 
   return (
     <div className="space-y-6">
@@ -30,9 +52,19 @@ export default function CertificatesPage() {
         }
       />
 
-      {showForm && <CertForm onAdd={add} onClose={() => setShowForm(false)} t={t} />}
+      {showForm && (
+        <CertForm
+          certTypes={certTypes}
+          lang={lang}
+          onAdd={add}
+          onClose={() => setShowForm(false)}
+          t={t}
+        />
+      )}
 
-      {certs.length === 0 ? (
+      {loading ? (
+        <div className="h-40 bg-gray-100 rounded-2xl animate-pulse" />
+      ) : certs.length === 0 ? (
         <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-sm">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center text-amber-600">
             <Award size={32} />
@@ -42,7 +74,7 @@ export default function CertificatesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {certs.map((c) => (
-            <CertCard key={c.id} cert={c} onRemove={() => remove(c.id)} t={t} />
+            <CertCard key={c.id} cert={c} lang={lang} onRemove={() => remove(c.id)} t={t} />
           ))}
         </div>
       )}
@@ -50,7 +82,7 @@ export default function CertificatesPage() {
   );
 }
 
-function CertCard({ cert, onRemove, t }) {
+function CertCard({ cert, lang, onRemove, t }) {
   return (
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-3">
@@ -65,7 +97,20 @@ function CertCard({ cert, onRemove, t }) {
         </button>
       </div>
       <h3 className="font-semibold text-gray-900 mb-1">{cert.title}</h3>
+      {cert.certificate_type_name?.[lang] && (
+        <div className="text-xs text-gray-400 mb-1">{cert.certificate_type_name[lang]}</div>
+      )}
       {cert.issuer && <div className="text-sm text-gray-500">{cert.issuer}</div>}
+      {cert.file_url && (
+        <a
+          href={cert.file_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-blue-600 hover:underline mt-2 inline-block"
+        >
+          {t.executor.view_file}
+        </a>
+      )}
       <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 gap-2 text-xs">
         {cert.issued_date && (
           <div>
@@ -84,17 +129,24 @@ function CertCard({ cert, onRemove, t }) {
   );
 }
 
-function CertForm({ onAdd, onClose, t }) {
+function CertForm({ certTypes, lang, onAdd, onClose, t }) {
   const [form, setForm] = useState({
     title: '', issuer: '', certificate_number: '',
-    issued_date: '', expiry_date: '',
+    issued_date: '', expiry_date: '', certificate_type: '',
   });
+  const [file, setFile] = useState(null);
+  const [saving, setSaving] = useState(false);
   const change = (f) => (e) => setForm({ ...form, [f]: e.target.value });
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (!form.title.trim()) return;
-    onAdd(form);
+    setSaving(true);
+    try {
+      await onAdd(form, file);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -107,16 +159,39 @@ function CertForm({ onAdd, onClose, t }) {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput label={t.dashboard.cert_title} value={form.title} onChange={change('title')} required />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.dashboard.cert_type}</label>
+          <select
+            value={form.certificate_type}
+            onChange={change('certificate_type')}
+            className="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:border-amber-500"
+          >
+            <option value="">—</option>
+            {certTypes.map((ct) => (
+              <option key={ct.id} value={ct.id}>{ct[`name_${lang}`]}</option>
+            ))}
+          </select>
+        </div>
         <FormInput label={t.dashboard.cert_issuer} value={form.issuer} onChange={change('issuer')} />
         <FormInput label={t.dashboard.cert_number} value={form.certificate_number} onChange={change('certificate_number')} />
         <FormInput label={t.dashboard.cert_issued} type="date" value={form.issued_date} onChange={change('issued_date')} />
         <FormInput label={t.dashboard.cert_expiry} type="date" value={form.expiry_date} onChange={change('expiry_date')} />
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.provider_tour.photos} (PDF/JPG/PNG)</label>
+          <input
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png,.webp"
+            onChange={(e) => setFile(e.target.files[0])}
+            className="text-sm text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-amber-50 file:text-amber-700 file:font-medium file:cursor-pointer hover:file:bg-amber-100"
+          />
+        </div>
       </div>
       <button
         type="submit"
-        className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:shadow-md transition-all"
+        disabled={saving}
+        className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:shadow-md transition-all disabled:opacity-50"
       >
-        <Plus size={18} /> {t.dashboard.add_cert}
+        <Plus size={18} /> {saving ? '...' : t.dashboard.add_cert}
       </button>
     </form>
   );

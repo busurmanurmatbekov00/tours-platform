@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { User, Mail, Phone, Globe, MapPin, Check, Save } from 'lucide-react';
-import { getMyProfile, updateMyProfile } from '../../api/providers';
+import { getMyProfile, updateMyProfile } from '../../api/provider';
 import { useT } from '../../hooks/useT';
 import StatusBadge from '../../components/StatusBadge';
 import PageHeader from '../../components/PageHeader';

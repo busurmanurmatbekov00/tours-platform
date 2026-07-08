@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ShieldCheck, Upload, FileText, Send, AlertCircle } from 'lucide-react';
 import {
   getMyVerificationRequests, submitVerificationRequest, uploadVerificationDocument,
-} from '../../api/providers';
+} from '../../api/provider';
 import { useT } from '../../hooks/useT';
 import StatusBadge from '../../components/StatusBadge';
 import PageHeader from '../../components/PageHeader';

@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useT } from '../hooks/useT';
-import { mockTours, tourTypes, difficultyLevels } from '../mocks/tours';
+import { getTours, getTourTypes, getDifficultyLevels } from '../api/tours';
 import TourCard from '../components/TourCard';
 
 const PRICE_MAX = 3000;
@@ -10,6 +10,10 @@ const DURATION_MAX = 30;
 export default function CatalogPage() {
   const { t, lang } = useT();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // справочники (загружаются один раз)
+  const [tourTypes, setTourTypes] = useState([]);
+  const [difficultyLevels, setDifficultyLevels] = useState([]);
 
   // состояние фильтров
   const [query, setQuery] = useState(searchParams.get('q') || '');
@@ -20,27 +24,56 @@ export default function CatalogPage() {
   const [durMin, setDurMin] = useState('');
   const [durMax, setDurMax] = useState('');
 
+  // результаты
+  const [tours, setTours] = useState([]);
+  const [count, setCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   // если ?q пришёл из главной — поднимаем
   useEffect(() => {
     setQuery(searchParams.get('q') || '');
   }, [searchParams]);
 
-  const filtered = useMemo(() => {
-    return mockTours.filter((tour) => {
-      // поиск по названию / описанию
-      if (query.trim()) {
-        const q = query.trim().toLowerCase();
-        const hay = `${tour.title.ru} ${tour.title.en} ${tour.summary.ru} ${tour.summary.en}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      if (typeId && String(tour.tour_type.id) !== typeId) return false;
-      if (difficultyId && String(tour.difficulty_level.id) !== difficultyId) return false;
-      if (priceMin && tour.price < Number(priceMin)) return false;
-      if (priceMax && tour.price > Number(priceMax)) return false;
-      if (durMin && tour.duration_days < Number(durMin)) return false;
-      if (durMax && tour.duration_days > Number(durMax)) return false;
-      return true;
-    });
+  // справочники — загружаем один раз при монтировании
+  useEffect(() => {
+    getTourTypes()
+      .then((res) => setTourTypes(res.data))
+      .catch((err) => console.error('Ошибка загрузки типов туров:', err));
+
+    getDifficultyLevels()
+      .then((res) => setDifficultyLevels(res.data))
+      .catch((err) => console.error('Ошибка загрузки уровней сложности:', err));
+  }, []);
+
+  // сами туры — с debounce, чтобы не спамить сервер при вводе текста
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setLoading(true);
+      setError(null);
+
+      const params = {};
+      if (query.trim()) params.q = query.trim();
+      if (typeId) params.tour_type = typeId;
+      if (difficultyId) params.difficulty = difficultyId;
+      if (priceMin) params.price_min = priceMin;
+      if (priceMax) params.price_max = priceMax;
+      if (durMin) params.duration_min = durMin;
+      if (durMax) params.duration_max = durMax;
+
+      getTours(params)
+        .then((res) => {
+          setTours(res.data.results);
+          setCount(res.data.count);
+        })
+        .catch((err) => {
+          console.error('Ошибка загрузки туров:', err);
+          setError(t.catalog.load_error || 'Не удалось загрузить туры');
+        })
+        .finally(() => setLoading(false));
+    }, 350); // debounce 350мс
+
+    return () => clearTimeout(timeoutId);
   }, [query, typeId, difficultyId, priceMin, priceMax, durMin, durMax]);
 
   const reset = () => {
@@ -96,7 +129,7 @@ export default function CatalogPage() {
             >
               <option value="">{t.catalog.all}</option>
               {tourTypes.map((tt) => (
-                <option key={tt.id} value={tt.id}>{tt.name[lang]}</option>
+                <option key={tt.id} value={tt.id}>{tt[`name_${lang}`]}</option>
               ))}
             </select>
           </div>
@@ -113,7 +146,7 @@ export default function CatalogPage() {
             >
               <option value="">{t.catalog.all}</option>
               {difficultyLevels.map((dl) => (
-                <option key={dl.id} value={dl.id}>{dl.name[lang]}</option>
+                <option key={dl.id} value={dl.id}>{dl[`name_${lang}`]}</option>
               ))}
             </select>
           </div>
@@ -167,17 +200,29 @@ export default function CatalogPage() {
 
         {/* Результаты */}
         <section>
-          <p className="text-sm text-gray-600 mb-4">
-            {t.catalog.found}: <strong>{filtered.length}</strong>
-          </p>
+          {error ? (
+            <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 mb-4">
+              {error}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600 mb-4">
+              {t.catalog.found}: <strong>{loading ? '…' : count}</strong>
+            </p>
+          )}
 
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-white rounded-lg border border-gray-200 h-72 animate-pulse" />
+              ))}
+            </div>
+          ) : tours.length === 0 ? (
             <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
               {t.catalog.no_results}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filtered.map((tour) => (
+              {tours.map((tour) => (
                 <TourCard key={tour.id} tour={tour} />
               ))}
             </div>

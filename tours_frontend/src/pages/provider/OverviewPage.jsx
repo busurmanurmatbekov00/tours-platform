@@ -3,10 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import {
   ShieldCheck, Award, Map, FileCheck, Plus, ArrowRight, Sparkles,
 } from 'lucide-react';
-import { getMyProfile, getMyVerificationRequests } from '../../api/providers';
+import { getMyProfile, getMyVerificationRequests, getMyTours, getMyCertificates } from '../../api/provider';
 import { useT } from '../../hooks/useT';
 import { useAppStore } from '../../store/useAppStore';
 import StatusBadge from '../../components/StatusBadge';
+
 
 export default function OverviewPage() {
   const { t } = useT();
@@ -16,8 +17,16 @@ export default function OverviewPage() {
   const { data: requests = [] } = useQuery({
     queryKey: ['my-verification'], queryFn: getMyVerificationRequests,
   });
+  const { data: tours = [] } = useQuery({
+    queryKey: ['my-tours-count'],
+    queryFn: () => getMyTours().then((res) => res.data),
+  });
+  const { data: certificates = [] } = useQuery({
+    queryKey: ['my-certificates-count'], queryFn: getMyCertificates,
+  });
 
   const docsCount = requests.reduce((acc, r) => acc + (r.documents?.length || 0), 0);
+  const publishedToursCount = tours.filter((tour) => tour.status === 'published').length;
 
   return (
     <div className="space-y-6">
@@ -50,13 +59,13 @@ export default function OverviewPage() {
           icon={Map}
           label={t.dashboard.stat_tours}
           gradient="from-emerald-500 to-teal-500"
-          value="0"
+          value={publishedToursCount}
         />
         <StatCard
           icon={Award}
           label={t.dashboard.stat_certificates}
           gradient="from-amber-500 to-orange-500"
-          value="0"
+          value={certificates.length}
         />
         <StatCard
           icon={FileCheck}

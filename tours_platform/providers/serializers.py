@@ -124,3 +124,28 @@ class AdminVerificationRequestDetailSerializer(serializers.ModelSerializer):
             'submitted_at', 'reviewed_at', 'reviewed_by_admin_email',
             'admin_comment', 'documents',
         )
+
+class MyCertificateSerializer(serializers.ModelSerializer):
+    certificate_type_name = serializers.SerializerMethodField()
+    file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Certificate
+        fields = (
+            'id', 'certificate_type', 'certificate_type_name',
+            'title', 'issuer', 'certificate_number',
+            'issued_date', 'expiry_date', 'file_path', 'file_url', 'created_at',
+        )
+        read_only_fields = ('id', 'file_path', 'file_url', 'created_at')
+
+    def get_certificate_type_name(self, obj):
+        if not obj.certificate_type:
+            return None
+        return {'ru': obj.certificate_type.name_ru, 'en': obj.certificate_type.name_en}
+
+    def get_file_url(self, obj):
+        if not obj.file_path:
+            return None
+        request = self.context.get('request')
+        path = f'/media/{obj.file_path}'
+        return request.build_absolute_uri(path) if request else path

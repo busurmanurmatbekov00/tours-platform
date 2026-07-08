@@ -55,6 +55,7 @@ export default function Header() {
         <nav className="flex items-center gap-1">
           <NavLink to="/" end className={navClass}>{t.nav.home}</NavLink>
           <NavLink to="/catalog" className={navClass}>{t.nav.catalog}</NavLink>
+          <NavLink to="/info" className={navClass}>{t.nav.info}</NavLink>
         </nav>
 
         {/* Правая часть */}

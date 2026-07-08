@@ -7,14 +7,15 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+
 from .models import (
     ProviderProfile, VerificationRequest, VerificationDocument,
-    VerificationStatus, VerificationDocumentType,
+    VerificationStatus, VerificationDocumentType,Certificate, CertificateType
 )
 from .serializers import (
     ProviderProfileSerializer,
     VerificationRequestSerializer,
-    VerificationDocumentSerializer,
+    VerificationDocumentSerializer, MyCertificateSerializer,
 )
 
 
@@ -145,3 +146,71 @@ class MyVerificationDocumentUploadView(APIView):
             VerificationDocumentSerializer(doc).data,
             status=status.HTTP_201_CREATED,
         )
+
+
+
+class MyCertificatesView(APIView):
+    """GET список своих сертификатов, POST создать новый (с файлом)."""
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 МБ
+    ALLOWED_MIME = {'application/pdf', 'image/jpeg', 'image/png', 'image/webp'}
+
+    def get(self, request):
+        profile = _get_my_profile(request)
+        qs = profile.certificates.all().order_by('-created_at')
+        return Response(MyCertificateSerializer(qs, many=True, context={'request': request}).data)
+
+    def post(self, request):
+        profile = _get_my_profile(request)
+        serializer = MyCertificateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        cert = serializer.save(provider_profile=profile)
+
+        upload = request.FILES.get('file')
+        if upload:
+            if upload.size > self.MAX_FILE_SIZE:
+                cert.delete()
+                return Response({'file': 'Файл больше 10 МБ.'}, status=status.HTTP_400_BAD_REQUEST)
+            if upload.content_type not in self.ALLOWED_MIME:
+                cert.delete()
+                return Response(
+                    {'file': f'Недопустимый тип: {upload.content_type}. Разрешены PDF, JPEG, PNG, WEBP.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            ext = os.path.splitext(upload.name)[1].lower()
+            unique = f'{uuid.uuid4().hex}{ext}'
+            rel_dir = os.path.join('certificates', str(profile.id))
+            abs_dir = os.path.join(settings.MEDIA_ROOT, rel_dir)
+            os.makedirs(abs_dir, exist_ok=True)
+            rel_path = os.path.join(rel_dir, unique).replace('\\', '/')
+            with open(os.path.join(settings.MEDIA_ROOT, rel_path), 'wb') as f:
+                for chunk in upload.chunks():
+                    f.write(chunk)
+
+            cert.file_path = rel_path
+            cert.save(update_fields=['file_path'])
+
+        return Response(MyCertificateSerializer(cert, context={'request': request}).data, status=status.HTTP_201_CREATED)
+    
+class MyCertificateDetailView(APIView):
+    """DELETE удалить свой сертификат."""
+
+    def delete(self, request, cert_id):
+        profile = _get_my_profile(request)
+        cert = get_object_or_404(Certificate, id=cert_id, provider_profile=profile)
+        cert.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CertificateTypesListView(APIView):
+    """GET список типов сертификатов (для выпадающего списка в форме)."""
+
+    def get(self, request):
+        qs = CertificateType.objects.all()
+        return Response([
+            {'id': ct.id, 'code': ct.code, 'name_ru': ct.name_ru, 'name_en': ct.name_en}
+            for ct in qs
+        ])

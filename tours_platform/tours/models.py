@@ -139,15 +139,13 @@ class TourTranslation(models.Model):
     summary = models.CharField(max_length=500, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     route_overview = models.TextField(blank=True, null=True)
+    is_auto_translated = models.BooleanField(default=False)  # ← новое поле
 
     class Meta:
         db_table = 'tour_translations'
         unique_together = (('tour', 'language'),)
         verbose_name = 'Перевод тура'
         verbose_name_plural = 'Переводы туров'
-
-    def __str__(self):
-        return f'{self.title} [{self.language.code}]'
 
 
 class TourPhoto(models.Model):

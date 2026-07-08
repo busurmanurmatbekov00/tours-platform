@@ -7,6 +7,10 @@ from .models import (
 )
 from locations.models import Location, LocationTranslation
 
+from .translation_utils import auto_translate
+from core.models import Language
+
+
 
 # ---------- Справочники (публичные) ----------
 
@@ -202,3 +206,88 @@ class TourCreateSerializer(serializers.ModelSerializer):
             'description_ru', 'description_en',
             'route_overview_ru', 'route_overview_en',
         )   
+
+    def create(self, validated_data):
+        # достаём текстовые поля переводов
+        title_ru = validated_data.pop('title_ru')
+        title_en = validated_data.pop('title_en', '') or ''
+        summary_ru = validated_data.pop('summary_ru', '') or ''
+        summary_en = validated_data.pop('summary_en', '') or ''
+        description_ru = validated_data.pop('description_ru', '') or ''
+        description_en = validated_data.pop('description_en', '') or ''
+        route_overview_ru = validated_data.pop('route_overview_ru', '') or ''
+        route_overview_en = validated_data.pop('route_overview_en', '') or ''
+
+        # создаём сам тур
+        tour = Tour.objects.create(**validated_data)
+
+        # определяем, нужен ли автоперевод (ен пустой, а ru заполнен)
+        auto_en = not title_en.strip()
+
+        if auto_en:
+            title_en = auto_translate(title_ru, 'ru', 'en')
+            summary_en = auto_translate(summary_ru, 'ru', 'en') if summary_ru else ''
+            description_en = auto_translate(description_ru, 'ru', 'en') if description_ru else ''
+            route_overview_en = auto_translate(route_overview_ru, 'ru', 'en') if route_overview_ru else ''
+
+        ru = Language.objects.get(code='ru')
+        en = Language.objects.get(code='en')
+
+        TourTranslation.objects.create(
+            tour=tour, language=ru,
+            title=title_ru, summary=summary_ru,
+            description=description_ru, route_overview=route_overview_ru,
+            is_auto_translated=False,
+        )
+        TourTranslation.objects.create(
+            tour=tour, language=en,
+            title=title_en, summary=summary_en,
+            description=description_en, route_overview=route_overview_en,
+            is_auto_translated=auto_en,
+        )
+
+        return tour
+    
+    def update(self, instance, validated_data):
+        title_ru = validated_data.pop('title_ru', None)
+        title_en = validated_data.pop('title_en', None)
+        summary_ru = validated_data.pop('summary_ru', None)
+        summary_en = validated_data.pop('summary_en', None)
+        description_ru = validated_data.pop('description_ru', None)
+        description_en = validated_data.pop('description_en', None)
+        route_overview_ru = validated_data.pop('route_overview_ru', None)
+        route_overview_en = validated_data.pop('route_overview_en', None)
+
+        # обновляем основные поля тура (price, duration и т.д.)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        ru = Language.objects.get(code='ru')
+        en = Language.objects.get(code='en')
+
+        tr_ru = instance.translations.filter(language=ru).first()
+        tr_en = instance.translations.filter(language=en).first()
+
+        if title_ru is not None and tr_ru:
+            tr_ru.title = title_ru
+            if summary_ru is not None:
+                tr_ru.summary = summary_ru
+            if description_ru is not None:
+                tr_ru.description = description_ru
+            if route_overview_ru is not None:
+                tr_ru.route_overview = route_overview_ru
+            tr_ru.save()
+
+        if tr_en:
+            # если исполнитель прислал свой English текст — используем его, снимаем флаг авто
+            if title_en:
+                tr_en.title = title_en
+                tr_en.is_auto_translated = False
+            # если English пустой, а русский текст поменялся, и раньше это был автоперевод — переводим заново
+            elif tr_en.is_auto_translated and title_ru is not None:
+                tr_en.title = auto_translate(title_ru, 'ru', 'en')
+
+            tr_en.save()
+
+        return instance

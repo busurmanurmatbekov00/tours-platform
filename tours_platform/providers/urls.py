@@ -1,8 +1,12 @@
 from django.urls import path
+
 from .views import (
     MyProviderProfileView,
     MyVerificationRequestsView,
     MyVerificationDocumentUploadView,
+    MyCertificatesView,
+    MyCertificateDetailView,
+    CertificateTypesListView,
 )
 from .admin_views import (
     AdminVerificationListView,
@@ -21,6 +25,10 @@ urlpatterns = [
     path('me/verification/', MyVerificationRequestsView.as_view(), name='me-verification'),
     path('me/verification/<int:request_id>/documents/',
          MyVerificationDocumentUploadView.as_view(), name='me-verification-upload'),
+     
+     path('me/certificates/', MyCertificatesView.as_view(), name='me-certificates'),
+    path('me/certificates/<int:cert_id>/', MyCertificateDetailView.as_view(), name='me-certificate-detail'),
+    path('certificate-types/', CertificateTypesListView.as_view(), name='certificate-types'),
 
     # для администратора
     path('admin/verification/', AdminVerificationListView.as_view(), name='admin-verif-list'),

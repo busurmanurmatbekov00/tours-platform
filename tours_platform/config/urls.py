@@ -9,8 +9,8 @@ urlpatterns = [
     path('api/providers/', include('providers.urls')),
     path('api/admin/', include('moderation.urls')),
     path('api/', include('tours.urls')),
-    path('api/help/', include('visas.urls')),        # ← визы и страховка
-    path('api/help/', include('helpdesk.urls')), 
+    path('api/help/', include('visas.urls')),
+    path('api/help/', include('helpdesk.urls')),
 ]
 
 if settings.DEBUG:

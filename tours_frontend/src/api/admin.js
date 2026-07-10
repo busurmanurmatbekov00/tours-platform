@@ -8,10 +8,9 @@ export const getAdminVerificationDetail = (id) =>
   api.get(`/providers/admin/verification/${id}/`).then((res) => res.data);
 
 export const approveVerification = (id, comment = '') =>
-  api.post(`/providers/admin/verification/${id}/approve/`, { admin_comment: comment }).then((res) => res.data);
 
 export const rejectVerification = (id, comment = '') =>
-  api.post(`/providers/admin/verification/${id}/reject/`, { admin_comment: comment }).then((res) => res.data);
+  api.post(`/providers/admin/verification/${id}/reject/`, { comment }).then((res) => res.data);
 
 // ============ ИСПОЛНИТЕЛИ ============
 export const getAdminProviders = (params) =>

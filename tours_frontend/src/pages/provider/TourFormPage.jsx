@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link  } from 'react-router-dom';
 import { Plus, Trash2, MapPin, Upload } from 'lucide-react';
 import { useT } from '../../hooks/useT';
 import PageHeader from '../../components/PageHeader';
@@ -9,7 +9,7 @@ import {
   uploadTourPhoto, deleteTourPhoto,
   addRoutePoint, deleteRoutePoint,
   setVisaDetails, setInsuranceDetails,
-  submitTour, mediaUrl,
+  submitTour, mediaUrl, getMyProfile
 } from '../../api/provider';
 
 export default function TourFormPage() {
@@ -26,6 +26,9 @@ export default function TourFormPage() {
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  const [canCreate, setCanCreate] = useState(isEdit);
+  const [checkingAccess, setCheckingAccess] = useState(!isEdit);
 
   const [basic, setBasic] = useState({
     tour_type: '', difficulty_level: '', is_custom: false,
@@ -51,6 +54,14 @@ export default function TourFormPage() {
     getDifficultyLevels().then((res) => setDifficultyLevels(res.data)).catch(() => {});
     getLocations().then((res) => setLocations(res.data)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (isEdit) return;
+    getMyProfile()
+      .then((profile) => setCanCreate(profile.verification_status_code === 'approved'))
+      .catch(() => setCanCreate(false))
+      .finally(() => setCheckingAccess(false));
+  }, [isEdit]);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -203,7 +214,22 @@ export default function TourFormPage() {
   if (loading) {
     return <div className="animate-pulse h-64 bg-white rounded-2xl border border-gray-100" />;
   }
+  
+  if (checkingAccess) {
+    return <div className="animate-pulse h-64 bg-white rounded-2xl border border-gray-100" />;
+  }
 
+  if (!isEdit && !canCreate) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
+        <h3 className="font-semibold text-amber-900 mb-2">{t.dashboard.verify_to_create_title}</h3>
+        <p className="text-sm text-amber-700 mb-4">{t.dashboard.verify_to_create_sub}</p>
+        <Link to="/dashboard/verification" className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700">
+          {t.dashboard.go_to_verification}
+        </Link>
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
       <PageHeader

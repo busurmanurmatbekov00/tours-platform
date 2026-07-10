@@ -50,6 +50,28 @@ class MyVerificationRequestsView(APIView):
     def post(self, request):
         profile = _get_my_profile(request)
 
+        # уже одобрен — повторная подача не нужна
+        if profile.verification_status.code == 'approved':
+            return Response(
+                {'detail': 'Вы уже верифицированы.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # обязательные поля профиля перед подачей заявки
+        missing = []
+        if not profile.display_name or not profile.display_name.strip():
+            missing.append('display_name')
+        if not profile.contact_email or not profile.contact_email.strip():
+            missing.append('contact_email')
+        if not profile.contact_phone or not profile.contact_phone.strip():
+            missing.append('contact_phone')
+        if missing:
+            return Response(
+                {'detail': 'Заполните профиль перед подачей заявки на верификацию.', 'missing_fields': missing},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # запретить повторную подачу, если уже есть pending
         pending = profile.verification_requests.filter(status__code='pending').exists()
         if pending:
             return Response(

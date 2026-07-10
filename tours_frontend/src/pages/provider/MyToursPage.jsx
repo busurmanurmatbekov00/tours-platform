@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Map, Plus } from 'lucide-react';
+import { Map, Plus, ShieldAlert } from 'lucide-react';
 import { useT } from '../../hooks/useT';
 import PageHeader from '../../components/PageHeader';
-import { getMyTours, mediaUrl } from '../../api/provider';
+import { getMyTours, getMyProfile, mediaUrl } from '../../api/provider';
 
 const STATUS_COLORS = {
   draft: 'bg-gray-100 text-gray-600',
@@ -16,14 +16,23 @@ const STATUS_COLORS = {
 export default function MyToursPage() {
   const { t, lang } = useT();
   const [tours, setTours] = useState([]);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getMyTours()
-      .then((res) => setTours(res.data))
-      .catch(() => setTours([]))
+    Promise.all([getMyTours(), getMyProfile()])
+      .then(([toursRes, profileData]) => {
+        setTours(toursRes.data);
+        setProfile(profileData);
+      })
+      .catch(() => {
+        setTours([]);
+        setProfile(null);
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  const isVerified = profile?.verification_status_code === 'approved';
 
   return (
     <div className="space-y-6">
@@ -31,15 +40,36 @@ export default function MyToursPage() {
         title={t.dashboard.tours_title}
         subtitle={t.dashboard.tours_sub}
         action={
-          <Link 
-            to="/dashboard/tours/new"
-            className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all"
-          >
-            <Plus size={18} />
-            {t.dashboard.new_tour}
-          </Link>
+          isVerified ? (
+            <Link
+              to="/dashboard/tours/new"
+              className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all"
+            >
+              <Plus size={18} />
+              {t.dashboard.new_tour}
+            </Link>
+          ) : null
         }
       />
+
+      {!loading && !isVerified && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 flex items-start gap-4">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+            <ShieldAlert size={22} />
+          </div>
+          <div>
+            <h3 className="font-semibold text-amber-900 mb-1">{t.dashboard.verify_to_create_title}</h3>
+            <p className="text-sm text-amber-700 mb-3">{t.dashboard.verify_to_create_sub}</p>
+            <Link
+              to="/dashboard/verification"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors"
+            >
+              <ShieldAlert size={16} />
+              {t.dashboard.go_to_verification}
+            </Link>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -59,8 +89,9 @@ export default function MyToursPage() {
           {tours.map((tour) => {
             const title = tour[`title_${lang}`] || tour.slug;
             return (
-              <Link 
-                key={tour.id} to={`/dashboard/tours/${tour.id}/edit`}
+              <Link
+                key={tour.id}
+                to={`/dashboard/tours/${tour.id}/edit`}
                 className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
               >
                 <div className="aspect-video bg-gray-100">

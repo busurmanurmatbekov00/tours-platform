@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ShieldCheck, Upload, FileText, Send, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Upload, FileText, Send, AlertCircle, UserCog } from 'lucide-react';
 import {
-  getMyVerificationRequests, submitVerificationRequest, uploadVerificationDocument,
+  getMyVerificationRequests, submitVerificationRequest, uploadVerificationDocument, getMyProfile,
 } from '../../api/provider';
 import { useT } from '../../hooks/useT';
 import StatusBadge from '../../components/StatusBadge';
@@ -17,18 +18,36 @@ const DOC_TYPES = [
 export default function VerificationPage() {
   const { t, lang } = useT();
   const qc = useQueryClient();
+  const [submitError, setSubmitError] = useState(null);
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ['my-verification'],
     queryFn: getMyVerificationRequests,
   });
 
+  const { data: profile } = useQuery({
+    queryKey: ['my-profile'],
+    queryFn: getMyProfile,
+  });
+
   const submit = useMutation({
     mutationFn: submitVerificationRequest,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['my-verification'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['my-verification'] });
+      setSubmitError(null);
+    },
+    onError: (err) => {
+      setSubmitError(err.response?.data?.detail || t.dashboard.submit_error);
+    },
   });
 
   const pending = requests.find((r) => r.status_code === 'pending');
+  const isApproved = profile?.verification_status_code === 'approved';
+  const isProfileComplete = Boolean(
+    profile?.display_name?.trim() &&
+    profile?.contact_email?.trim() &&
+    profile?.contact_phone?.trim()
+  );
 
   return (
     <div className="space-y-6">
@@ -36,7 +55,7 @@ export default function VerificationPage() {
         title={t.dashboard.verif_title}
         subtitle={t.dashboard.verif_sub}
         action={
-          !pending && (
+          !pending && !isApproved && isProfileComplete && (
             <button
               onClick={() => submit.mutate()}
               disabled={submit.isPending}
@@ -48,6 +67,38 @@ export default function VerificationPage() {
           )
         }
       />
+
+      {isApproved && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 flex items-center gap-3">
+          <ShieldCheck size={22} className="text-emerald-600" />
+          <p className="text-emerald-800 font-medium">{t.dashboard.already_verified}</p>
+        </div>
+      )}
+
+      {!isApproved && !isProfileComplete && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 flex items-start gap-4">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+            <UserCog size={22} />
+          </div>
+          <div>
+            <h3 className="font-semibold text-amber-900 mb-1">{t.dashboard.complete_profile_title}</h3>
+            <p className="text-sm text-amber-700 mb-3">{t.dashboard.complete_profile_sub}</p>
+            <Link
+              to="/dashboard/profile"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors"
+            >
+              <UserCog size={16} />
+              {t.dashboard.go_to_profile}
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {submitError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+          {submitError}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="h-48 bg-gray-100 rounded-2xl animate-pulse" />

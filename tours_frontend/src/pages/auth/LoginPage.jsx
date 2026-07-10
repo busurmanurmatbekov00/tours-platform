@@ -21,7 +21,7 @@ export default function LoginPage() {
     try {
       const data = await login(email, password);
       setAuth({ access: data.access, refresh: data.refresh, user: data.user });
-      if (data.user.role === 'admin') navigate('/admin');
+      if (data.user.role === 'admin') navigate('/admin-panel');
       else navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.detail || err.response?.data?.non_field_errors?.[0] || 'Ошибка входа');

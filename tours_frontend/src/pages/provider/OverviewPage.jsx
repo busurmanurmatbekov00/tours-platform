@@ -97,8 +97,16 @@ export default function OverviewPage() {
             to="/dashboard/verification"
             icon={ShieldCheck}
             iconBg="bg-gradient-to-br from-blue-500 to-cyan-500"
-            title={t.dashboard.action_submit_verif}
-            sub={t.dashboard.action_submit_verif_sub}
+            title={
+              profile?.verification_status_code === 'approved'
+                ? t.dashboard.action_verified_title
+                : t.dashboard.action_submit_verif
+            }
+            sub={
+              profile?.verification_status_code === 'approved'
+                ? t.dashboard.action_verified_sub
+                : t.dashboard.action_submit_verif_sub
+            }
           />
         </div>
       </section>

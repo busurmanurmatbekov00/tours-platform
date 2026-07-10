@@ -11,7 +11,7 @@ export default function AdminProvidersPage() {
     queryKey: ['admin-providers'], queryFn: () => getAdminProviders(),
     });
     
-    const providers = providersResponse?.results || providersResponse || [];
+  const providers = providersResponse?.results || providersResponse || [];
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['admin-providers'] });
   const block = useMutation({ mutationFn: blockProvider, onSuccess: invalidate });

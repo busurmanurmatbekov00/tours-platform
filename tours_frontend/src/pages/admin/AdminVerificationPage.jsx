@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, X, FileText } from 'lucide-react';
+import { Check, X, FileText, AlertCircle  } from 'lucide-react';
 import { useT } from '../../hooks/useT';
 import { getAdminVerificationList, getAdminVerificationDetail, approveVerification, rejectVerification } from '../../api/admin';
 import { mediaUrl } from '../../api/provider';
@@ -11,6 +11,7 @@ export default function AdminVerificationPage() {
   const [expandedId, setExpandedId] = useState(null);
   const [detail, setDetail] = useState(null);
   const [comment, setComment] = useState('');
+  const [rejectError, setRejectError] = useState(null);
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ['admin-verification'], queryFn: getAdminVerificationList,
@@ -29,18 +30,20 @@ export default function AdminVerificationPage() {
   };
 
   const approve = useMutation({
-    mutationFn: (id) => approveVerification(id, comment),
+    mutationFn: ({ id, comment }) => approveVerification(id, comment),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-verification'] });
       setExpandedId(null);
+      setRejectError(null);
     },
   });
 
   const reject = useMutation({
-    mutationFn: (id) => rejectVerification(id, comment),
+    mutationFn: ({ id, comment }) => rejectVerification(id, comment),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-verification'] });
       setExpandedId(null);
+      setRejectError(null);
     },
   });
 
@@ -100,26 +103,41 @@ export default function AdminVerificationPage() {
                       <textarea
                         placeholder={t.admin_panel.comment_placeholder}
                         value={comment}
-                        onChange={(e) => setComment(e.target.value)}
+                        onChange={(e) => {
+                          setComment(e.target.value);
+                          if (rejectError) setRejectError(null);
+                        }}
                         rows={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                       />
                       <div className="flex gap-2">
                         <button
-                          onClick={() => approve.mutate(req.id)}
+                          onClick={() => approve.mutate({ id: req.id, comment })}
                           disabled={approve.isPending}
                           className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-50"
                         >
                           <Check size={16} /> {t.admin_panel.approve}
                         </button>
                         <button
-                          onClick={() => reject.mutate(req.id)}
+                          onClick={() => {
+                            if (!comment.trim()) {
+                              setRejectError(t.admin_panel.reject_comment_required);
+                              return;
+                            }
+                            setRejectError(null);
+                            reject.mutate({ id: req.id, comment });
+                          }}
                           disabled={reject.isPending}
                           className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50"
                         >
                           <X size={16} /> {t.admin_panel.reject}
                         </button>
                       </div>
+                      {rejectError && (
+                        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                          <AlertCircle size={14} /> {rejectError}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

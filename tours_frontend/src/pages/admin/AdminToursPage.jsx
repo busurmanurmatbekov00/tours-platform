@@ -1,5 +1,6 @@
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Check, Eye, EyeOff, Trash2, ExternalLink } from 'lucide-react';
 import { useT } from '../../hooks/useT';
 import { getAdminTours, approveTour, hideTour, unhideTour, deleteAdminTour } from '../../api/admin';
 import { mediaUrl } from '../../api/provider';
@@ -9,8 +10,9 @@ export default function AdminToursPage() {
   const qc = useQueryClient();
 
   const { data: toursResponse, isLoading } = useQuery({
-    queryKey: ['admin-tours'], queryFn: () => getAdminTours(),
-    });
+    queryKey: ['admin-tours'],
+    queryFn: () => getAdminTours(),
+  });
 
   const tours = toursResponse?.results || toursResponse || [];
 
@@ -48,7 +50,14 @@ export default function AdminToursPage() {
                 <h3 className="font-semibold text-gray-900 truncate">{tour.title_ru || tour.slug}</h3>
                 <div className="text-sm text-gray-500">${tour.price}</div>
 
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-2 pt-2 flex-wrap">
+                  <Link
+                    to={`/admin-panel/tours/${tour.id}`}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg hover:bg-blue-100"
+                  >
+                    <ExternalLink size={14} /> Подробнее
+                  </Link>
+
                   {tour.status === 'pending_review' && (
                     <button
                       onClick={() => approve.mutate(tour.id)}

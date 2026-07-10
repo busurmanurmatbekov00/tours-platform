@@ -19,7 +19,7 @@ from .public_providers_views import (
 )
 
 from .admin_moderation_views import (
-    AdminToursListView, AdminTourHideView, AdminTourUnhideView, AdminTourDeleteView, AdminTourApproveView,
+    AdminToursListView, AdminTourHideView, AdminTourUnhideView, AdminTourDeleteView, AdminTourApproveView,AdminToursListView, AdminTourDetailView, 
 )
 
 app_name = 'tours'
@@ -56,6 +56,7 @@ urlpatterns = [
 
     # Админ-модерация туров
     path('providers/admin/tours/', AdminToursListView.as_view(), name='admin-tours'),
+     path('providers/admin/tours/<int:tour_id>/', AdminTourDetailView.as_view(), name='admin-tour-detail'), 
     path('providers/admin/tours/<int:tour_id>/hide/', AdminTourHideView.as_view(), name='admin-tour-hide'),
     path('providers/admin/tours/<int:tour_id>/unhide/', AdminTourUnhideView.as_view(), name='admin-tour-unhide'),
     path('providers/admin/tours/<int:tour_id>/delete/', AdminTourDeleteView.as_view(), name='admin-tour-delete'),

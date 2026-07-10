@@ -21,6 +21,7 @@ import MyToursPage from './pages/provider/MyToursPage';
 import AdminOverviewPage from './pages/admin/AdminOverviewPage';
 import AdminVerificationPage from './pages/admin/AdminVerificationPage';
 import AdminToursPage from './pages/admin/AdminToursPage';
+import AdminTourDetailPage from './pages/admin/AdminTourDetailPage';   // ← добавили
 import AdminProvidersPage from './pages/admin/AdminProvidersPage';
 
 const PROVIDER_ROLES = ['guide', 'tour_operator', 'travel_agent'];
@@ -56,6 +57,7 @@ function App() {
             <Route index element={<AdminOverviewPage />} />
             <Route path="verification" element={<AdminVerificationPage />} />
             <Route path="tours" element={<AdminToursPage />} />
+            <Route path="tours/:tourId" element={<AdminTourDetailPage />} />   {/* ← добавили */}
             <Route path="providers" element={<AdminProvidersPage />} />
           </Route>
         </Route>

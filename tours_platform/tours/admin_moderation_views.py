@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from users.permissions import IsPlatformAdmin
 from moderation.models import ModerationAction
-
+from .catalog_serializers import CatalogTourDetailSerializer
 from .models import Tour
 
 
@@ -232,3 +232,38 @@ class AdminTourDeleteView(APIView):
             'tour_id': tour.id,
             'new_status': tour.status,
         })
+
+
+
+     
+
+
+class AdminTourDetailView(APIView):
+    """
+    GET /api/providers/admin/tours/<id>/
+    Полная информация о туре для просмотра админом:
+    описание, фото, маршрут, визовые и страховые детали.
+    Работает для любого статуса (draft, pending_review, published, hidden, archived).
+    Только чтение — без изменения.
+    """
+    permission_classes = [IsPlatformAdmin]
+
+    def get(self, request, tour_id: int):
+        tour = get_object_or_404(
+            Tour.objects.select_related(
+                'tour_type', 'difficulty_level',
+                'provider_profile__user', 'provider_profile__verification_status',
+                'visa_details', 'insurance_details',
+            ).prefetch_related(
+                'translations__language',
+                'tour_type__translations__language',
+                'difficulty_level__translations__language',
+                'photos',
+                'route_points__location__translations__language',
+            ),
+            id=tour_id,
+        )
+        serializer = CatalogTourDetailSerializer(
+            tour, context={'request': request}
+        )
+        return Response(serializer.data)

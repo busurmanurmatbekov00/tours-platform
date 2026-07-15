@@ -1,15 +1,23 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, User, ShieldCheck, Award, Map, LogOut, Mountain,
 } from 'lucide-react';
 import { useT } from '../hooks/useT';
 import { useAppStore } from '../store/useAppStore';
+import { getMyProfile } from '../api/provider';
 
 export default function ProviderLayout() {
   const { t } = useT();
   const navigate = useNavigate();
   const user = useAppStore((s) => s.user);
   const clearAuth = useAppStore((s) => s.clearAuth);
+
+  // тот же queryKey, что и в ProviderProfilePage — данные будут синхронизированы автоматически
+  const { data: profile } = useQuery({
+    queryKey: ['my-profile'],
+    queryFn: getMyProfile,
+  });
 
   const onLogout = () => {
     clearAuth();
@@ -38,8 +46,12 @@ export default function ProviderLayout() {
           {/* Сайдбар с градиентом */}
           <aside className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 rounded-2xl p-5 h-fit shadow-xl lg:sticky lg:top-20">
             <div className="flex items-center gap-3 px-2 pb-4 mb-4 border-b border-white/20">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                {(user?.full_name || user?.email || '?').charAt(0).toUpperCase()}
+              <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shrink-0">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  (user?.full_name || user?.email || '?').charAt(0).toUpperCase()
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-white font-semibold truncate">

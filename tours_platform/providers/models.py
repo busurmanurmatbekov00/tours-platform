@@ -48,7 +48,6 @@ class CertificateType(models.Model):
     def __str__(self):
         return self.name_ru
 
-
 class ProviderProfile(models.Model):
     """Публичные профили исполнителей (1:1 с User)."""
     id = models.BigAutoField(primary_key=True)
@@ -68,6 +67,9 @@ class ProviderProfile(models.Model):
     website_url = models.CharField(max_length=255, blank=True, null=True)
     address = models.CharField(max_length=255, blank=True, null=True)
     is_published = models.BooleanField(default=False)
+    languages = models.ManyToManyField(
+        'core.Language', related_name='provider_profiles', blank=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -78,7 +80,6 @@ class ProviderProfile(models.Model):
 
     def __str__(self):
         return self.display_name
-
 
 class ProviderProfileTranslation(models.Model):
     """Переводы профиля исполнителя (headline, bio)."""

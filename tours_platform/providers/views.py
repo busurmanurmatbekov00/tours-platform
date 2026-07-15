@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from django.db import transaction  
 
 from .models import (
     ProviderProfile, VerificationRequest, VerificationDocument,
@@ -26,19 +26,80 @@ def _get_my_profile(request):
 
 class MyProviderProfileView(APIView):
     """GET / PATCH свой профиль."""
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request):
         profile = _get_my_profile(request)
-        return Response(ProviderProfileSerializer(profile).data)
+        return Response(
+            ProviderProfileSerializer(profile, context={'request': request}).data
+        )
 
     def patch(self, request):
         profile = _get_my_profile(request)
-        serializer = ProviderProfileSerializer(profile, data=request.data, partial=True)
+        serializer = ProviderProfileSerializer(
+            profile, data=request.data, partial=True, context={'request': request}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data)
+        return Response(
+            ProviderProfileSerializer(profile, context={'request': request}).data
+        )
+    
 
+class MyProviderAvatarView(APIView):
+    """POST загрузить/заменить аватар, DELETE удалить."""
+    parser_classes = [MultiPartParser, FormParser]
 
+    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 МБ
+    ALLOWED_MIME = {'image/jpeg', 'image/png', 'image/webp'}
+
+    def post(self, request):
+        profile = _get_my_profile(request)
+        upload = request.FILES.get('file')
+        if not upload:
+            return Response({'file': 'Файл обязателен.'}, status=status.HTTP_400_BAD_REQUEST)
+        if upload.size > self.MAX_FILE_SIZE:
+            return Response({'file': 'Файл больше 5 МБ.'}, status=status.HTTP_400_BAD_REQUEST)
+        if upload.content_type not in self.ALLOWED_MIME:
+            return Response(
+                {'file': 'Разрешены только JPEG, PNG, WEBP.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if profile.avatar_path:
+            old_path = os.path.join(settings.MEDIA_ROOT, profile.avatar_path)
+            if os.path.exists(old_path):
+                os.remove(old_path)
+
+        ext = os.path.splitext(upload.name)[1].lower()
+        unique = f'{uuid.uuid4().hex}{ext}'
+        rel_dir = os.path.join('avatars', str(profile.id))
+        abs_dir = os.path.join(settings.MEDIA_ROOT, rel_dir)
+        os.makedirs(abs_dir, exist_ok=True)
+        rel_path = os.path.join(rel_dir, unique).replace('\\', '/')
+        with open(os.path.join(settings.MEDIA_ROOT, rel_path), 'wb') as f:
+            for chunk in upload.chunks():
+                f.write(chunk)
+
+        profile.avatar_path = rel_path
+        profile.save(update_fields=['avatar_path'])
+
+        return Response(
+            ProviderProfileSerializer(profile, context={'request': request}).data
+        )
+
+    def delete(self, request):
+        profile = _get_my_profile(request)
+        if profile.avatar_path:
+            old_path = os.path.join(settings.MEDIA_ROOT, profile.avatar_path)
+            if os.path.exists(old_path):
+                os.remove(old_path)
+            profile.avatar_path = None
+            profile.save(update_fields=['avatar_path'])
+        return Response(
+            ProviderProfileSerializer(profile, context={'request': request}).data
+        )
+    
 class MyVerificationRequestsView(APIView):
     """GET список своих заявок, POST — создать новую заявку."""
 
@@ -58,12 +119,13 @@ class MyVerificationRequestsView(APIView):
             )
 
         # обязательные поля профиля перед подачей заявки
+        # обязательные поля профиля перед подачей заявки
         missing = []
         if not profile.display_name or not profile.display_name.strip():
             missing.append('display_name')
-        if not profile.contact_email or not profile.contact_email.strip():
+        if not profile.user.email or not profile.user.email.strip():
             missing.append('contact_email')
-        if not profile.contact_phone or not profile.contact_phone.strip():
+        if not profile.user.phone or not profile.user.phone.strip():
             missing.append('contact_phone')
         if missing:
             return Response(
@@ -94,11 +156,13 @@ class MyVerificationRequestsView(APIView):
         )
 
 
+from .document_rules import get_allowed_document_type_codes
+
+
 class MyVerificationDocumentUploadView(APIView):
     """POST загрузить документ в свою заявку."""
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
-    # лимиты загрузки
     MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 МБ
     ALLOWED_MIME = {
         'application/pdf',
@@ -132,6 +196,15 @@ class MyVerificationDocumentUploadView(APIView):
             return Response({'document_type': 'Неверный тип документа.'},
                             status=status.HTTP_400_BAD_REQUEST)
 
+        # проверка: разрешён ли этот тип документа для роли пользователя
+        role_code = profile.user.role.code
+        allowed_codes = get_allowed_document_type_codes(role_code)
+        if doc_type.code not in allowed_codes:
+            return Response(
+                {'document_type': f'Тип документа "{doc_type.name_ru}" недоступен для вашей роли.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if upload.size > self.MAX_FILE_SIZE:
             return Response({'file': 'Файл больше 10 МБ.'},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -142,7 +215,6 @@ class MyVerificationDocumentUploadView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # сохраняем файл в MEDIA_ROOT/verification/<provider_id>/<uuid>.<ext>
         ext = os.path.splitext(upload.name)[1].lower()
         unique = f'{uuid.uuid4().hex}{ext}'
         rel_dir = os.path.join('verification', str(profile.id))
@@ -167,8 +239,6 @@ class MyVerificationDocumentUploadView(APIView):
             VerificationDocumentSerializer(doc).data,
             status=status.HTTP_201_CREATED,
         )
-
-
 
 class MyCertificatesView(APIView):
     """GET список своих сертификатов, POST создать новый (с файлом)."""
@@ -236,4 +306,49 @@ class CertificateTypesListView(APIView):
             for ct in qs
         ])
 
- 
+class AllowedDocumentTypesView(APIView):
+    """GET /api/providers/me/allowed-document-types/ — типы документов для роли текущего пользователя."""
+
+    def get(self, request):
+        profile = _get_my_profile(request)
+        role_code = profile.user.role.code
+        allowed_codes = get_allowed_document_type_codes(role_code)
+        qs = VerificationDocumentType.objects.filter(code__in=allowed_codes)
+        return Response([
+            {'id': dt.id, 'code': dt.code, 'name_ru': dt.name_ru, 'name_en': dt.name_en}
+            for dt in qs
+        ])
+class MyVerificationCancelView(APIView):
+    """POST /api/providers/me/verification/<id>/cancel/ — отозвать заявку на рассмотрении."""
+
+    @transaction.atomic
+    def post(self, request, request_id: int):
+        profile = _get_my_profile(request)
+        req = get_object_or_404(
+            VerificationRequest, id=request_id, provider_profile=profile
+        )
+
+        if req.status.code != 'pending':
+            return Response(
+                {'detail': f'Нельзя отменить заявку в статусе "{req.status.code}".'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # удаляем загруженные файлы с диска
+        for doc in req.documents.all():
+            if doc.file_path:
+                abs_path = os.path.join(settings.MEDIA_ROOT, doc.file_path)
+                if os.path.exists(abs_path):
+                    try:
+                        os.remove(abs_path)
+                    except OSError:
+                        pass
+
+        req.delete()
+
+        # возвращаем профиль в состояние "не подано"
+        not_submitted = VerificationStatus.objects.get(code='not_submitted')
+        profile.verification_status = not_submitted
+        profile.save(update_fields=['verification_status'])
+
+        return Response({'detail': 'Заявка отменена.'})

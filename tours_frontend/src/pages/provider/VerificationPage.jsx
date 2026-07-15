@@ -1,19 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ShieldCheck, Upload, FileText, Send, AlertCircle, UserCog } from 'lucide-react';
+import { ShieldCheck, Upload, FileText, Send, AlertCircle, UserCog, X, XCircle } from 'lucide-react';
 import {
-  getMyVerificationRequests, submitVerificationRequest, uploadVerificationDocument, getMyProfile,
+  getMyVerificationRequests, submitVerificationRequest, uploadVerificationDocument,
+  getMyProfile, getAllowedDocumentTypes, cancelVerificationRequest,
 } from '../../api/provider';
 import { useT } from '../../hooks/useT';
 import StatusBadge from '../../components/StatusBadge';
 import PageHeader from '../../components/PageHeader';
-
-const DOC_TYPES = [
-  { id: 1, label_ru: 'Паспорт', label_en: 'Passport' },
-  { id: 2, label_ru: 'Лицензия гида', label_en: 'Guide license' },
-  { id: 3, label_ru: 'Регистрация бизнеса', label_en: 'Business registration' },
-];
 
 export default function VerificationPage() {
   const { t, lang } = useT();
@@ -130,34 +125,86 @@ function EmptyState() {
 function RequestCard({ req, t, lang }) {
   const qc = useQueryClient();
   const [file, setFile] = useState(null);
-  const [docTypeId, setDocTypeId] = useState(DOC_TYPES[0].id);
+  const [fileName, setFileName] = useState('');
+  const [docTypeId, setDocTypeId] = useState(null);
   const [error, setError] = useState(null);
+
+  const { data: allowedTypes = [] } = useQuery({
+    queryKey: ['allowed-document-types'],
+    queryFn: getAllowedDocumentTypes,
+    enabled: req.status_code === 'pending',
+  });
 
   const upload = useMutation({
     mutationFn: ({ file, typeId }) => uploadVerificationDocument(req.id, file, typeId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['my-verification'] });
       setFile(null);
+      setFileName('');
       setError(null);
     },
     onError: (err) => {
       const resp = err.response?.data;
-      setError(typeof resp === 'object' ? JSON.stringify(resp) : 'Ошибка загрузки');
+      setError(typeof resp === 'object' ? (resp.document_type || resp.file || JSON.stringify(resp)) : 'Ошибка загрузки');
     },
   });
+
+  const cancel = useMutation({
+    mutationFn: () => cancelVerificationRequest(req.id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['my-verification'] });
+      qc.invalidateQueries({ queryKey: ['my-profile'] });
+    },
+  });
+
+  const onFileSelect = (e) => {
+    const f = e.target.files?.[0];
+    if (f) {
+      setFile(f);
+      setFileName(f.name);
+    }
+  };
+
+  const clearFile = () => {
+    setFile(null);
+    setFileName('');
+  };
+
+  const onUpload = () => {
+    if (!file || !docTypeId) return;
+    upload.mutate({ file, typeId: docTypeId });
+  };
+
+  const onCancelRequest = () => {
+    if (window.confirm(t.dashboard.confirm_cancel_request)) {
+      cancel.mutate();
+    }
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="p-5 flex items-center justify-between gap-3 flex-wrap bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
         <div>
           <div className="text-xs text-gray-500 uppercase tracking-wide font-medium">
-            Заявка #{req.id}
+            {t.dashboard.request_number} #{req.id}
           </div>
           <div className="text-sm text-gray-700 mt-0.5">
             {new Date(req.submitted_at).toLocaleString()}
           </div>
         </div>
-        <StatusBadge status={req.status_code} />
+        <div className="flex items-center gap-3">
+          <StatusBadge status={req.status_code} />
+          {req.status_code === 'pending' && (
+            <button
+              onClick={onCancelRequest}
+              disabled={cancel.isPending}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 disabled:opacity-50 transition-colors"
+            >
+              <XCircle size={14} />
+              {cancel.isPending ? '...' : t.dashboard.cancel_request}
+            </button>
+          )}
+        </div>
       </div>
 
       {req.admin_comment && (
@@ -199,25 +246,45 @@ function RequestCard({ req, t, lang }) {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2">
               <select
-                value={docTypeId}
+                value={docTypeId || ''}
                 onChange={(e) => setDocTypeId(Number(e.target.value))}
                 className="px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:border-blue-500"
               >
-                {DOC_TYPES.map((dt) => (
+                <option value="">{t.dashboard.select_document_type}</option>
+                {allowedTypes.map((dt) => (
                   <option key={dt.id} value={dt.id}>
-                    {lang === 'ru' ? dt.label_ru : dt.label_en}
+                    {lang === 'ru' ? dt.name_ru : dt.name_en}
                   </option>
                 ))}
               </select>
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.webp"
-                onChange={(e) => setFile(e.target.files[0])}
-                className="text-sm text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 file:font-medium file:cursor-pointer hover:file:bg-blue-100"
-              />
+
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                <label className="text-sm text-blue-600 font-medium cursor-pointer whitespace-nowrap">
+                  {t.dashboard.choose_file}
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.webp"
+                    onChange={onFileSelect}
+                    className="hidden"
+                  />
+                </label>
+                <span className="text-sm text-gray-500 truncate flex-1">
+                  {fileName || t.dashboard.no_file_chosen}
+                </span>
+                {fileName && (
+                  <button
+                    type="button"
+                    onClick={clearFile}
+                    className="w-5 h-5 flex items-center justify-center rounded-full bg-gray-300 hover:bg-gray-400 text-white shrink-0 transition-colors"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+
               <button
-                disabled={!file || upload.isPending}
-                onClick={() => upload.mutate({ file, typeId: docTypeId })}
+                disabled={!file || !docTypeId || upload.isPending}
+                onClick={onUpload}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-semibold rounded-lg hover:shadow-md disabled:opacity-50 transition-all"
               >
                 <Upload size={16} />

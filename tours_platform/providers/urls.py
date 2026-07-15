@@ -7,6 +7,9 @@ from .views import (
     MyCertificatesView,
     MyCertificateDetailView,
     CertificateTypesListView,
+    MyProviderAvatarView,
+    MyVerificationCancelView,       
+    AllowedDocumentTypesView,  
 )
 from .admin_views import (
     AdminVerificationListView,
@@ -17,12 +20,14 @@ from .admin_views import (
     AdminUnblockProviderView,
     AdminProvidersListView, 
 )
+from .email_change_views import RequestEmailChangeView, VerifyEmailChangeView
 
 app_name = 'providers'
 
 urlpatterns = [
     # для исполнителя
     path('me/', MyProviderProfileView.as_view(), name='me'),
+     path('me/avatar/', MyProviderAvatarView.as_view(), name='me-avatar'),
     path('me/verification/', MyVerificationRequestsView.as_view(), name='me-verification'),
     path('me/verification/<int:request_id>/documents/',
          MyVerificationDocumentUploadView.as_view(), name='me-verification-upload'),
@@ -44,4 +49,15 @@ urlpatterns = [
     path('admin/providers/<int:profile_id>/unblock/',
          AdminUnblockProviderView.as_view(), name='admin-provider-unblock'),
      path('admin/providers/', AdminProvidersListView.as_view(), name='admin-providers-list'),
+
+    path('me/email-change/request/', RequestEmailChangeView.as_view(), name='me-email-change-request'),
+    path('me/email-change/verify/', VerifyEmailChangeView.as_view(), name='me-email-change-verify'),
+
+     path('me/verification/', MyVerificationRequestsView.as_view(), name='me-verification'),
+    path('me/verification/<int:request_id>/documents/',
+         MyVerificationDocumentUploadView.as_view(), name='me-verification-upload'),
+    path('me/verification/<int:request_id>/cancel/',
+         MyVerificationCancelView.as_view(), name='me-verification-cancel'),
+    path('me/allowed-document-types/',
+         AllowedDocumentTypesView.as_view(), name='me-allowed-doc-types'),
 ]

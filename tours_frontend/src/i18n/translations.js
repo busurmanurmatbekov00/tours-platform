@@ -159,6 +159,19 @@ export const translations = {
       complete_profile_sub: 'Укажите название, контактный email и телефон, чтобы администратор и туристы могли с вами связаться.',
       go_to_profile: 'Перейти к профилю',
       submit_error: 'Не удалось отправить заявку.',
+      change_avatar: 'Изменить фото',
+      about_me: 'О себе',
+      about_me_placeholder: 'Расскажите о своём опыте и специализации...',
+      languages: 'Языки общения',
+      guide_name_auto: 'Формируется автоматически: "Гид [ФИО]"',
+      contact_locked_hint: 'Подтверждено при регистрации, изменение недоступно',
+      change_email: 'Изменить',
+      cancel_request: 'Отменить заявку',
+      confirm_cancel_request: 'Вы уверены, что хотите отменить заявку? Все загруженные документы будут удалены.',
+      request_number: 'Заявка',
+      select_document_type: 'Выберите тип документа',
+      choose_file: 'Выбрать файл',
+      no_file_chosen: 'Файл не выбран',
     },
 
     provider_tour: {
@@ -374,6 +387,22 @@ export const translations = {
       complete_profile_sub: 'Add a display name, contact email and phone so admins and tourists can reach you.',
       go_to_profile: 'Go to profile',
       submit_error: 'Failed to submit request.',
+      change_avatar: 'Change photo',
+      about_me: 'About me',
+      about_me_placeholder: 'Tell about your experience and specialization...',
+      languages: 'Languages spoken',
+      guide_name_auto: 'Auto-generated: "Guide [Full Name]"',
+      contact_locked_hint: 'Confirmed at registration, cannot be changed here',
+      change_email: 'Change',
+      cancel_request: 'Cancel request',
+      confirm_cancel_request: 'Are you sure you want to cancel the request? All uploaded documents will be deleted.',
+      request_number: 'Request',
+      select_document_type: 'Select document type',
+      choose_file: 'Choose file',
+      no_file_chosen: 'No file chosen',
+
+
+
     },
 
     provider_tour: {

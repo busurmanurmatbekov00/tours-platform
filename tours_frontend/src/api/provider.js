@@ -80,3 +80,26 @@ export const deleteCertificate = (certId) =>
 
 export const getCertificateTypes = () =>
   api.get('/providers/certificate-types/').then((res) => res.data);
+
+export const uploadAvatar = (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post('/providers/me/avatar/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }).then((res) => res.data);
+};
+
+export const deleteAvatar = () =>
+  api.delete('/providers/me/avatar/').then((res) => res.data);
+
+export const requestEmailChange = (newEmail) =>
+  api.post('/providers/me/email-change/request/', { new_email: newEmail }).then((res) => res.data);
+
+export const verifyEmailChange = (code) =>
+  api.post('/providers/me/email-change/verify/', { code }).then((res) => res.data);
+
+export const getAllowedDocumentTypes = () =>
+  api.get('/providers/me/allowed-document-types/').then((res) => res.data);
+
+export const cancelVerificationRequest = (requestId) =>
+  api.post(`/providers/me/verification/${requestId}/cancel/`).then((res) => res.data);

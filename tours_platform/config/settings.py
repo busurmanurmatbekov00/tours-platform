@@ -174,3 +174,18 @@ SIMPLE_JWT = {
 # где хранить загруженные документы верификации
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'busurmanurmatbekov00@gmail.com'
+EMAIL_HOST_PASSWORD = 'geqf ckgd kmaa cfdi'  
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+ALLOWED_EMAIL_DOMAINS = [
+    'gmail.com', 'mail.ru', 'yandex.ru', 'bk.ru', 'inbox.ru',
+]
+
+OTP_COOLDOWN_SECONDS = 100
+OTP_TTL_SECONDS = 300  # 5 минут

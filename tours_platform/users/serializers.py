@@ -1,4 +1,5 @@
 import bcrypt
+from django.core.cache import cache
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.text import slugify
@@ -36,12 +37,16 @@ class ProviderRegistrationSerializer(serializers.Serializer):
     full_name = serializers.CharField(max_length=150)
     phone = serializers.CharField(max_length=30, required=False, allow_blank=True)
     role_code = serializers.ChoiceField(choices=['guide', 'tour_operator', 'travel_agent'])
-    display_name = serializers.CharField(max_length=150)
+    display_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
 
     def validate_email(self, value):
+        value = value.lower()
         if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError('Пользователь с таким email уже зарегистрирован.')
-        return value.lower()
+        # проверяем, что email прошёл OTP-подтверждение
+        if not cache.get(f'otp_verified:{value}'):
+            raise serializers.ValidationError('Email не подтверждён. Пройдите верификацию через код.')
+        return value
 
     def validate_role_code(self, value):
         try:
@@ -49,6 +54,27 @@ class ProviderRegistrationSerializer(serializers.Serializer):
         except Role.DoesNotExist:
             raise serializers.ValidationError('Недопустимая роль.')
         return value
+
+    def validate(self, attrs):
+        role_code = attrs.get('role_code')
+        display_name = (attrs.get('display_name') or '').strip()
+
+        # для гида display_name не обязателен — сформируем автоматически
+        if role_code == 'guide':
+            return attrs
+
+        # для оператора/агента — обязателен и уникален
+        if not display_name:
+            raise serializers.ValidationError(
+                {'display_name': 'Это поле обязательно для туроператора/турагента.'}
+            )
+
+        if ProviderProfile.objects.filter(display_name__iexact=display_name).exists():
+            raise serializers.ValidationError(
+                {'display_name': 'Это название уже занято, выберите другое.'}
+            )
+
+        return attrs
 
     @transaction.atomic
     def create(self, validated_data):
@@ -62,9 +88,16 @@ class ProviderRegistrationSerializer(serializers.Serializer):
             is_active=True,
         )
 
-        # 2) публичный профиль (статус — not_submitted)
+        # 2) название для каталога
+        role_code = validated_data['role_code']
+        if role_code == 'guide':
+            display_name = f"Гид {validated_data['full_name']}"
+        else:
+            display_name = validated_data['display_name'].strip()
+
+        # 3) публичный профиль (статус — not_submitted)
         not_submitted = VerificationStatus.objects.get(code='not_submitted')
-        base_slug = slugify(validated_data['display_name']) or f'provider-{user.id}'
+        base_slug = slugify(display_name) or f'provider-{user.id}'
         slug = base_slug
         n = 1
         while ProviderProfile.objects.filter(slug=slug).exists():
@@ -75,7 +108,7 @@ class ProviderRegistrationSerializer(serializers.Serializer):
             user=user,
             verification_status=not_submitted,
             slug=slug,
-            display_name=validated_data['display_name'],
+            display_name=display_name,
             is_published=False,
         )
         return user

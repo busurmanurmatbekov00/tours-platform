@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { registerProvider } from '../../api/auth';
 import { useAppStore } from '../../store/useAppStore';
 import { useT } from '../../hooks/useT';
+import PhoneInput from '../../components/PhoneInput';
+import EmailVerification from '../../components/EmailVerification';
 
 export default function RegisterPage() {
   const { t } = useT();
@@ -13,21 +15,45 @@ export default function RegisterPage() {
     email: '',
     password: '',
     full_name: '',
-    phone: '',
+    phone: '+996',
     display_name: '',
     role_code: 'guide',
   });
+  const [emailVerified, setEmailVerified] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const isGuide = form.role_code === 'guide';
+
   const change = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+
+  // если пользователь меняет email после подтверждения — сбрасываем верификацию
+  const handleEmailChange = (val) => {
+    setForm((f) => ({ ...f, email: val }));
+    if (emailVerified) setEmailVerified(false);
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+
+    if (!emailVerified) {
+      setError('Подтвердите email перед регистрацией.');
+      return;
+    }
+
+    const phoneDigits = form.phone.replace('+996', '');
+    if (phoneDigits.length > 0 && phoneDigits.length < 9) {
+      setError('Номер телефона должен состоять из 9 цифр после кода +996');
+      return;
+    }
+
     setLoading(true);
     try {
-      const data = await registerProvider(form);
+      const payload = { ...form };
+      if (isGuide) delete payload.display_name;
+
+      const data = await registerProvider(payload);
       setAuth({ access: data.access, refresh: data.refresh, user: data.user });
       navigate('/dashboard');
     } catch (err) {
@@ -53,36 +79,50 @@ export default function RegisterPage() {
             <option value="travel_agent">{t.auth.role_travel_agent}</option>
           </select>
         </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t.auth.full_name}</label>
           <input type="text" required value={form.full_name} onChange={change('full_name')}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500" />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t.auth.display_name}</label>
-          <input type="text" required value={form.display_name} onChange={change('display_name')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t.auth.email}</label>
-          <input type="email" required value={form.email} onChange={change('email')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t.auth.phone}</label>
-          <input type="text" value={form.phone} onChange={change('phone')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500" />
-        </div>
+
+        {!isGuide && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t.auth.display_name}</label>
+            <input type="text" required value={form.display_name} onChange={change('display_name')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500" />
+          </div>
+        )}
+
+        <EmailVerification
+          email={form.email}
+          onEmailChange={handleEmailChange}
+          verified={emailVerified}
+          onVerified={setEmailVerified}
+        />
+
+        <PhoneInput
+          label={t.auth.phone}
+          value={form.phone}
+          onChange={(val) => setForm({ ...form, phone: val })}
+        />
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t.auth.password}</label>
           <input type="password" required minLength={8} value={form.password} onChange={change('password')}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500" />
         </div>
+
         {error && <div className="text-sm text-red-600 break-words">{error}</div>}
-        <button type="submit" disabled={loading}
-          className="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 disabled:opacity-50">
-          {loading ? '...' : t.auth.submit_register}
+
+        <button
+          type="submit"
+          disabled={loading || !emailVerified}
+          className="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? '...' : !emailVerified ? 'Сначала подтвердите email' : t.auth.submit_register}
         </button>
+
         <p className="text-sm text-gray-600 text-center">
           {t.auth.have_account}{' '}
           <Link to="/login" className="text-blue-600 hover:underline">{t.auth.sign_in}</Link>

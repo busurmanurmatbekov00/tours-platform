@@ -1,0 +1,91 @@
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  transition: background-color 0.3s ease, border-color 0.3s ease,
+    box-shadow 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+/* Прозрачная версия — только на главной странице */
+.header-transparent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: transparent;
+  border-bottom: 1px solid transparent;
+}
+
+.header-transparent .header-logo-text {
+  color: #ffffff;
+  transition: color 0.3s ease;
+}
+
+.header-transparent .header-logo-subtext {
+  color: rgba(255, 255, 255, 0.7);
+  transition: color 0.3s ease;
+}
+
+.header-transparent .header-nav-link {
+  color: rgba(255, 255, 255, 0.8);
+  transition: color 0.3s ease;
+}
+
+.header-transparent .header-nav-link:hover,
+.header-transparent .header-nav-link.active {
+  color: #ffffff;
+}
+
+.header-transparent .header-lang-wrapper {
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
+}
+
+.header-transparent .header-lang-btn-inactive {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.header-transparent .header-lang-btn-active {
+  background-color: #ffffff;
+  color: #1d4ed8;
+}
+
+/* Белая версия — на всех остальных страницах */
+.header-white {
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(229, 231, 235, 0.6);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.header-white .header-logo-text {
+  color: #111827;
+}
+
+.header-white .header-logo-subtext {
+  color: #6b7280;
+}
+
+.header-white .header-nav-link {
+  color: #4b5563;
+}
+
+.header-white .header-nav-link:hover,
+.header-white .header-nav-link.active {
+  color: #1d4ed8;
+}
+
+.header-white .header-lang-wrapper {
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+}
+
+.header-white .header-lang-btn-inactive {
+  color: #4b5563;
+}
+
+.header-white .header-lang-btn-active {
+  background: linear-gradient(to right, #2563eb, #4f46e5);
+  color: #ffffff;
+}
